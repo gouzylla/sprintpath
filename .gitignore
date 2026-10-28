@@ -21,3 +21,7 @@ frontend/vite.config.d.ts
 # Runtime logs
 *.log
 *.exit
+
+# Supabase local metadata
+supabase/.temp/
+backend/supabase/
