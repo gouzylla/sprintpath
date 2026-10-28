@@ -62,24 +62,38 @@ async function nimJson(system: string, user: string): Promise<Record<string, unk
   if (!apiKey) throw new Error('NVIDIA non configuré')
   const baseUrl = Deno.env.get('NVIDIA_NIM_BASE_URL') ?? 'https://integrate.api.nvidia.com/v1'
   const model = Deno.env.get('NVIDIA_NIM_MODEL') ?? 'nvidia/nemotron-3.5-super-vl-120b-a12b'
-  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-      temperature: 0.2,
-      max_tokens: 900,
-      response_format: { type: 'json_object' },
-    }),
-  })
-  if (!response.ok) throw new Error(`NVIDIA HTTP ${response.status}`)
-  const payload = await response.json()
-  const content = payload?.choices?.[0]?.message?.content
-  if (!content) throw new Error('Réponse NVIDIA vide')
-  const parsed = JSON.parse(content)
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Réponse NVIDIA invalide')
-  return parsed
+  let lastError: unknown
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+          temperature: 0.2,
+          max_tokens: 3000,
+          response_format: { type: 'json_object' },
+        }),
+      })
+      if (!response.ok) throw new Error(`NVIDIA HTTP ${response.status}`)
+      const payload = await response.json()
+      const choice = payload?.choices?.[0]
+      const message = choice?.message
+      const content = message?.content
+      if (!content) {
+        const reasoningLength = typeof message?.reasoning_content === 'string' ? message.reasoning_content.length : 0
+        throw new Error(`Réponse NVIDIA vide (finish=${choice?.finish_reason ?? 'unknown'}, reasoning=${reasoningLength})`)
+      }
+      const parsed = JSON.parse(content)
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Réponse NVIDIA invalide')
+      return parsed
+    } catch (error) {
+      lastError = error
+      if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 400 * attempt))
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Réponse NVIDIA invalide')
 }
 
 function assertCoach(data: Record<string, unknown>): { title: string; message: string; action: string } {
@@ -93,7 +107,7 @@ function assertCoach(data: Record<string, unknown>): { title: string; message: s
 
 function assertGenerated(data: Record<string, unknown>): { prompt: string; expected_answer: string; explanation: string; duration_seconds: number } {
   const keys = Object.keys(data).sort().join(',')
-  if (keys !== 'duration_seconds,explanation,expected_answer,prompt') throw new Error('Champs exercice invalides')
+  if (keys !== 'duration_seconds,expected_answer,explanation,prompt') throw new Error('Champs exercice invalides')
   if (typeof data.prompt !== 'string' || data.prompt.length < 5 || data.prompt.length > 5000) throw new Error('Prompt invalide')
   if (typeof data.expected_answer !== 'string' || !data.expected_answer.trim() || data.expected_answer.length > 10000) throw new Error('Réponse invalide')
   if (typeof data.explanation !== 'string' || data.explanation.length < 3 || data.explanation.length > 5000) throw new Error('Explication invalide')
@@ -194,7 +208,9 @@ async function handleAttempt(request: Request, url: URL) {
     const reviewDate = new Date(Date.now() + Number(interval.split(' ')[0]) * 86400000).toISOString()
     await supabase.from('skills').update({ level, next_review_at: reviewDate }).eq('id', skill.id)
     nextReview = reviewDate
-
+  }
+  return json({ attempt_id: attempt.id, score, feedback, explanation: exercise.explanation, expected_answer: exercise.expected_answer, next_review_at: nextReview })
+}
 
 async function handleCoach(request: Request) {
   const body = await request.json()
@@ -270,8 +286,4 @@ Deno.serve(async (request: Request) => {
     return json({ detail: 'Erreur interne du serveur' }, 500)
   }
 })
-
-  }
-  return json({ attempt_id: attempt.id, score, feedback, explanation: exercise.explanation, expected_answer: exercise.expected_answer, next_review_at: nextReview })
-}
 
