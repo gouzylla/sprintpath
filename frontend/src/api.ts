@@ -33,6 +33,7 @@ export async function submitAttempt(exerciseId: number, answer: string, duration
 export async function askCoach(
   domain: Domain,
   question: string,
+  context: string,
   answer: string,
   expectedAnswer: string,
   mode: 'hint' | 'explain' | 'interview'
@@ -41,7 +42,7 @@ export async function askCoach(
   const response = await fetch(`${API}/ai/coach`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ domain, question, answer, expected_answer: expectedAnswer, mode })
+    body: JSON.stringify({ domain, question, context, answer, expected_answer: expectedAnswer, mode })
   })
   if (!response.ok) throw new Error('Le coach IA est indisponible')
   return response.json()

@@ -13,12 +13,12 @@ describe('helpers API IA', () => {
     const coach = { title: 'Piste', message: 'Pense au GROUP BY', action: 'group_by' }
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(coach), { status: 200 }))
 
-    await expect(askCoach('sql', 'Question SQL', 'ma réponse', 'SELECT', 'hint')).resolves.toEqual(coach)
+    await expect(askCoach('sql', 'Question SQL', 'commandes (id, montant)', 'ma réponse', 'SELECT', 'hint')).resolves.toEqual(coach)
 
     const [url, init] = vi.mocked(fetch).mock.calls[0]
     expect(url).toContain('/api/ai/coach')
     expect(init?.method).toBe('POST')
-    expect(JSON.parse(String(init?.body))).toMatchObject({ domain: 'sql', mode: 'hint' })
+    expect(JSON.parse(String(init?.body))).toMatchObject({ domain: 'sql', mode: 'hint', context: 'commandes (id, montant)' })
   })
 
   it('demande une variante avec le domaine et le sujet', async () => {
@@ -34,7 +34,7 @@ describe('helpers API IA', () => {
 
   it('refuse les fonctions IA hors connexion', async () => {
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: false })
-    await expect(askCoach('sql', 'Question', '', '', 'hint')).rejects.toThrow('connexion')
+    await expect(askCoach('sql', 'Question', '', '', '', 'hint')).rejects.toThrow('connexion')
     await expect(generateExercise('sql', 'jointures')).rejects.toThrow('connexion')
     expect(fetch).not.toHaveBeenCalled()
   })

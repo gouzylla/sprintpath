@@ -11,6 +11,7 @@ create table if not exists public.exercises (
   skill_id bigint not null references public.skills(id) on delete cascade,
   domain text not null check (domain in ('sql', 'python', 'english')),
   prompt text not null,
+  context text,
   expected_answer text not null,
   explanation text not null,
   difficulty integer not null default 1 check (difficulty between 1 and 5),
@@ -46,8 +47,8 @@ insert into public.skills (domain, name) values
   ('english', 'Expliquer une décision')
 on conflict (name) do nothing;
 
-insert into public.exercises (skill_id, domain, prompt, expected_answer, explanation, difficulty)
-select s.id, v.domain, v.prompt, v.expected_answer, v.explanation, v.difficulty
+insert into public.exercises (skill_id, domain, prompt, context, expected_answer, explanation, difficulty)
+select s.id, v.domain, v.prompt, case when v.domain = 'sql' then 'commandes (id, client_id, montant, date_commande, pays)' || chr(10) || 'clients (id, nom)' else null end, v.expected_answer, v.explanation, v.difficulty
 from (values
   ('sql', 'Filtrer et trier', 'Affichez les commandes de plus de 100 € triées de la plus récente à la plus ancienne.', 'SELECT * FROM commandes WHERE montant > 100 ORDER BY date_commande DESC;', 'Le filtre numérique doit précéder le tri. ORDER BY DESC inverse l''ordre chronologique.', 1),
   ('sql', 'Agréger des données', 'Quel total de commandes calcule cette requête ? SELECT COUNT(*) FROM commandes;', 'Le nombre total de lignes dans la table commandes.', 'COUNT(*) compte les lignes, y compris celles dont d''autres colonnes sont NULL.', 1),

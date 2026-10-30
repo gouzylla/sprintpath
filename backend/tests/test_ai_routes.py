@@ -29,6 +29,7 @@ def test_generated_exercise_is_validated_and_persisted(monkeypatch):
     async def fake_chat_json(system: str, user: str):
         return {
             "prompt": "Écrivez une CTE qui compte les commandes par client.",
+            "context": "commandes (id, client_id, montant, date_commande, pays)\nclients (id, nom)",
             "expected_answer": "WITH orders AS (...) SELECT ...",
             "explanation": "WITH permet de nommer une relation intermédiaire.",
             "duration_seconds": 240,
@@ -64,6 +65,7 @@ def test_unexpected_nim_field_is_rejected(monkeypatch):
     async def fake_chat_json(system: str, user: str):
         return {
             "prompt": "Écrivez une fonction qui additionne deux nombres.",
+            "context": "",
             "expected_answer": "def add(a, b): return a + b",
             "explanation": "La fonction retourne la somme des arguments.",
             "duration_seconds": 120,

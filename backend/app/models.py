@@ -29,6 +29,7 @@ class Exercise(Base):
     skill_id: Mapped[int] = mapped_column(ForeignKey("skills.id"))
     domain: Mapped[str] = mapped_column(String(32), index=True)
     prompt: Mapped[str] = mapped_column(Text)
+    context: Mapped[str | None] = mapped_column(Text, nullable=True)
     expected_answer: Mapped[str] = mapped_column(Text)
     explanation: Mapped[str] = mapped_column(Text)
     difficulty: Mapped[int] = mapped_column(Integer, default=1)

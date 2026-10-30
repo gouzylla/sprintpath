@@ -1,5 +1,9 @@
+from sqlalchemy import inspect, text
+
 from .database import Base, SessionLocal, engine
 from .models import Exercise, Skill
+
+SQL_CONTEXT = "commandes (id, client_id, montant, date_commande, pays)\nclients (id, nom)"
 
 SKILLS = [
     ("sql", "Filtrer et trier"),
@@ -36,8 +40,14 @@ EXERCISES = [
 
 def seed_database() -> None:
     Base.metadata.create_all(bind=engine)
+    columns = {column["name"] for column in inspect(engine).get_columns("exercises")}
+    if "context" not in columns:
+        with engine.begin() as connection:
+            connection.execute(text("alter table exercises add column context text"))
     with SessionLocal() as db:
         if db.query(Skill).count():
+            db.query(Exercise).filter(Exercise.domain == "sql").update({Exercise.context: SQL_CONTEXT}, synchronize_session=False)
+            db.commit()
             return
         skills: dict[tuple[str, str], Skill] = {}
         for domain, name in SKILLS:
@@ -46,5 +56,5 @@ def seed_database() -> None:
             skills[(domain, name)] = skill
         db.flush()
         for domain, skill_name, prompt, expected, explanation, difficulty in EXERCISES:
-            db.add(Exercise(skill_id=skills[(domain, skill_name)].id, domain=domain, prompt=prompt, expected_answer=expected, explanation=explanation, difficulty=difficulty))
+            db.add(Exercise(skill_id=skills[(domain, skill_name)].id, domain=domain, prompt=prompt, context=SQL_CONTEXT if domain == "sql" else None, expected_answer=expected, explanation=explanation, difficulty=difficulty))
         db.commit()

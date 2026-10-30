@@ -17,6 +17,7 @@ class ExerciseOut(BaseModel):
     skill_id: int
     domain: str
     prompt: str
+    context: str | None = None
     difficulty: int
     duration_seconds: int
 
@@ -38,6 +39,7 @@ class AttemptOut(BaseModel):
 class CoachIn(BaseModel):
     domain: Literal["sql", "python", "english"]
     question: str = Field(min_length=3, max_length=5_000)
+    context: str = Field(default="", max_length=5_000)
     answer: str = Field(default="", max_length=10_000)
     expected_answer: str = Field(default="", max_length=10_000)
     mode: Literal["hint", "explain", "interview"] = "hint"
@@ -61,6 +63,7 @@ class GeneratedExerciseData(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     prompt: str = Field(min_length=5, max_length=5_000)
+    context: str = Field(max_length=5_000)
     expected_answer: str = Field(min_length=1, max_length=10_000)
     explanation: str = Field(min_length=3, max_length=5_000)
     duration_seconds: int = Field(default=180, ge=30, le=1_800)

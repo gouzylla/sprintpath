@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { askCoach, submitAttempt } from '../api'
 import { localGrade } from '../storage'
 import { DOMAIN_META, type AttemptResult, type CoachResult, type Exercise, type LocalAttempt } from '../types'
+import Icon, { domainIcon } from './Icon'
 
 interface Props {
   exercises: Exercise[]
@@ -41,7 +42,7 @@ export default function Session({ exercises, onExit, onFinish }: Props) {
   async function requestCoach(mode: 'hint' | 'explain' | 'interview') {
     setCoachLoading(true); setCoachError(''); setCoach(null)
     try {
-      const response = await askCoach(current.domain, current.prompt, answer, result?.expected_answer ?? '', mode)
+      const response = await askCoach(current.domain, current.prompt, current.context ?? '', answer, result?.expected_answer ?? '', mode)
       setCoach(response)
     } catch (error) {
       setCoachError(error instanceof Error ? error.message : 'Le coach IA est indisponible')
@@ -55,34 +56,45 @@ export default function Session({ exercises, onExit, onFinish }: Props) {
 
   return <main className="page session-page">
     <div className="session-head">
-      <button className="back-button" onClick={onExit} aria-label="Quitter la session">←</button>
-      <div className="session-progress"><span style={{ width: `${progress}%` }} /></div><span className="step-count">{index + 1}/{exercises.length}</span>
+      <button className="back-button" onClick={onExit} aria-label="Quitter la session"><Icon name="back" /></button>
+      <div className="session-progress" aria-label={`Question ${index + 1} sur ${exercises.length}`}><span style={{ width: `${progress}%` }} /></div>
+      <span className="step-count">{index + 1} / {exercises.length}</span>
     </div>
     <div className="session-content">
-      <div className="question-meta"><span>{DOMAIN_META[current.domain].code} / {DOMAIN_META[current.domain].label}</span><span>≈ {Math.ceil(current.duration_seconds / 60)} min</span></div>
+      <div className="question-meta"><span className="question-domain"><Icon name={domainIcon[current.domain]} />{DOMAIN_META[current.domain].label}</span><span><Icon name="clock" /> ≈ {Math.ceil(current.duration_seconds / 60)} min</span></div>
+      {current.context && <aside className="exercise-context" aria-label="Hypothèses de départ">
+        <span className="exercise-context-label">Hypothèses de départ</span>
+        <pre>{current.context}</pre>
+      </aside>}
       <h1 className="question-title">{current.prompt}</h1>
       {!result ? <>
         <label className="answer-label" htmlFor="answer">Votre réponse</label>
-        <textarea id="answer" value={answer} onChange={event => setAnswer(event.target.value)} placeholder={current.domain === 'english' ? 'Écrivez votre réponse en anglais…' : 'Écrivez votre réponse…'} autoFocus />
-        <div className="answer-hints"><span>Pas besoin d’être parfait</span><span>{answer.length} caractère{answer.length > 1 ? 's' : ''}</span></div>
-        <button className="primary-cta session-submit" disabled={!answer.trim() || loading} onClick={submit}>{loading ? 'Évaluation…' : 'Vérifier ma réponse'} <span>→</span></button>
+        <div className="answer-box">
+          <textarea id="answer" name="answer" value={answer} onChange={event => setAnswer(event.target.value)} placeholder={current.domain === 'english' ? 'Écrivez votre réponse en anglais…' : 'Écrivez votre réponse…'} autoComplete="off" />
+          <span className="answer-count">{answer.length} caractère{answer.length > 1 ? 's' : ''}</span>
+        </div>
+        <p className="answer-reassurance">Pas besoin d’être parfait. Une réponse approchée aide déjà à progresser.</p>
+        <button className="primary-cta session-submit" disabled={!answer.trim() || loading} onClick={submit}>{loading ? 'Évaluation…' : 'Vérifier ma réponse'}<Icon name="arrow" /></button>
       </> : <div className="feedback-panel">
-        <div className={`score-stamp ${result.score >= 80 ? 'good' : result.score >= 50 ? 'medium' : 'low'}`}><strong>{result.score}</strong><span>/ 100</span></div>
-        <p className="eyebrow">VOTRE FEEDBACK</p><h2>{result.feedback}</h2>
+        <div className={`feedback-summary ${result.score >= 80 ? 'good' : result.score >= 50 ? 'medium' : 'low'}`}>
+          <div className="feedback-score"><strong>{result.score}</strong><span>/ 100</span></div>
+          <div><p className="eyebrow">VOTRE RÉSULTAT</p><h2>{result.score >= 80 ? 'Bien joué.' : result.score >= 50 ? 'Sur la bonne piste.' : 'Encore un effort.'}</h2></div>
+        </div>
+        <div className="feedback-message"><span className="feedback-label">Mon retour</span><p>{result.feedback}</p></div>
         <div className="explanation"><span>À retenir</span><p>{result.explanation}</p></div>
-        <details><summary>Voir la réponse attendue</summary><pre>{result.expected_answer}</pre></details>
+        <details><summary>Voir la réponse attendue <Icon name="arrow" /></summary><pre>{result.expected_answer}</pre></details>
         <section className="ai-coach" aria-live="polite">
-          <div className="ai-coach-head"><span className="ai-mark">✦</span><div><p className="eyebrow">COACH IA</p><h3>Aller plus loin</h3></div></div>
+          <div className="ai-coach-head"><span className="ai-mark"><Icon name="spark" /></span><div><p className="eyebrow">BESOIN D’UN COUP DE POUCE ?</p><h3>Aller plus loin avec le coach</h3></div></div>
           <div className="coach-actions">
-            <button onClick={() => requestCoach('hint')} disabled={coachLoading}>Un indice</button>
-            <button onClick={() => requestCoach('explain')} disabled={coachLoading}>Expliquer</button>
-            <button onClick={() => requestCoach('interview')} disabled={coachLoading}>Question entretien</button>
+            <button onClick={() => requestCoach('hint')} disabled={coachLoading}>Obtenir un indice</button>
+            <button onClick={() => requestCoach('explain')} disabled={coachLoading}>Demander une explication</button>
+            <button onClick={() => requestCoach('interview')} disabled={coachLoading}>Simuler un entretien</button>
           </div>
-          {coachLoading && <p className="coach-status">Le coach réfléchit…</p>}
+          {coachLoading && <p className="coach-status">Le coach prépare sa réponse…</p>}
           {coachError && <p className="coach-error">{coachError}</p>}
           {coach && <div className="coach-answer"><strong>{coach.title}</strong><p>{coach.message}</p></div>}
         </section>
-        <button className="primary-cta session-submit" onClick={next}>{index < exercises.length - 1 ? 'Question suivante' : 'Voir ma progression'} <span>→</span></button>
+        <button className="primary-cta session-submit" onClick={next}>{index < exercises.length - 1 ? 'Question suivante' : 'Voir ma progression'}<Icon name="arrow" /></button>
       </div>}
     </div>
   </main>

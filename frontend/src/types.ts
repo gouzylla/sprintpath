@@ -5,6 +5,7 @@ export interface Exercise {
   skill_id: number
   domain: Domain
   prompt: string
+  context?: string
   expected_answer?: string
   explanation?: string
   difficulty: number

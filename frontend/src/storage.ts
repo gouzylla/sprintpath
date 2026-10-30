@@ -3,10 +3,12 @@ import type { Domain, Exercise, LocalAttempt } from './types'
 const EXERCISE_KEY = 'sprintpath.exercises.v1'
 const ATTEMPT_KEY = 'sprintpath.attempts.v1'
 
+const sqlContext = 'commandes (id, client_id, montant, date_commande, pays)\nclients (id, nom)'
+
 export const fallbackExercises: Exercise[] = [
-  { id: 101, skill_id: 1, domain: 'sql', prompt: 'Affichez les commandes de plus de 100 € triées de la plus récente à la plus ancienne.', expected_answer: 'SELECT * FROM commandes WHERE montant > 100 ORDER BY date_commande DESC;', explanation: 'Le filtre numérique précède le tri. DESC inverse l’ordre chronologique.', difficulty: 1, duration_seconds: 180 },
-  { id: 102, skill_id: 2, domain: 'sql', prompt: 'Comment conserver tous les clients, y compris ceux sans commande ?', expected_answer: 'SELECT clients.*, commandes.id FROM clients LEFT JOIN commandes ON commandes.client_id = clients.id;', explanation: 'LEFT JOIN conserve la table de gauche. INNER JOIN exclurait les clients sans commande.', difficulty: 1, duration_seconds: 180 },
-  { id: 103, skill_id: 4, domain: 'sql', prompt: 'Écrivez une requête affichant le nombre de commandes par pays.', expected_answer: 'SELECT pays, COUNT(*) AS total FROM commandes GROUP BY pays;', explanation: 'COUNT est appliqué à chaque groupe défini par pays.', difficulty: 2, duration_seconds: 240 },
+  { id: 101, skill_id: 1, domain: 'sql', prompt: 'Affichez les commandes de plus de 100 € triées de la plus récente à la plus ancienne.', context: sqlContext, expected_answer: 'SELECT * FROM commandes WHERE montant > 100 ORDER BY date_commande DESC;', explanation: 'Le filtre numérique précède le tri. DESC inverse l’ordre chronologique.', difficulty: 1, duration_seconds: 180 },
+  { id: 102, skill_id: 2, domain: 'sql', prompt: 'Comment conserver tous les clients, y compris ceux sans commande ?', context: sqlContext, expected_answer: 'SELECT clients.*, commandes.id FROM clients LEFT JOIN commandes ON commandes.client_id = clients.id;', explanation: 'LEFT JOIN conserve la table de gauche. INNER JOIN exclurait les clients sans commande.', difficulty: 1, duration_seconds: 180 },
+  { id: 103, skill_id: 4, domain: 'sql', prompt: 'Écrivez une requête affichant le nombre de commandes par pays.', context: sqlContext, expected_answer: 'SELECT pays, COUNT(*) AS total FROM commandes GROUP BY pays;', explanation: 'COUNT est appliqué à chaque groupe défini par pays.', difficulty: 2, duration_seconds: 240 },
   { id: 201, skill_id: 6, domain: 'python', prompt: 'Quel résultat produit {1, 2, 2, 3} ?', expected_answer: '{1, 2, 3}', explanation: 'Un ensemble supprime les doublons.', difficulty: 1, duration_seconds: 90 },
   { id: 202, skill_id: 7, domain: 'python', prompt: 'Que retourne cette fonction ? def double(x): return x * 2', expected_answer: 'Le double de x', explanation: 'return termine la fonction et renvoie la valeur calculée.', difficulty: 1, duration_seconds: 120 },
   { id: 203, skill_id: 8, domain: 'python', prompt: 'Transformez la liste [\'a\', \'b\'] en [\'A\', \'B\'].', expected_answer: "[s.upper() for s in ['a', 'b']]", explanation: 'Une compréhension construit une nouvelle liste.', difficulty: 1, duration_seconds: 150 },
@@ -27,7 +29,7 @@ export function loadExercises(): Exercise[] {
 export function cacheExercises(exercises: Exercise[]): void {
   const withOfflineSolutions = exercises.map(exercise => {
     const local = fallbackExercises.find(item => item.prompt === exercise.prompt)
-    return local ? { ...exercise, expected_answer: local.expected_answer, explanation: local.explanation } : exercise
+    return local ? { ...exercise, context: exercise.context ?? local.context, expected_answer: local.expected_answer, explanation: local.explanation } : exercise
   })
   localStorage.setItem(EXERCISE_KEY, JSON.stringify(withOfflineSolutions))
 }

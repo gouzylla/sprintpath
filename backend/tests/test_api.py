@@ -13,6 +13,7 @@ def test_health_and_seed_content():
     exercises = client.get("/api/exercises?domain=sql").json()
     assert len(exercises) >= 3
     assert all(exercise["domain"] == "sql" for exercise in exercises)
+    assert all("commandes" in exercise["context"] for exercise in exercises)
 
 
 def test_attempt_updates_dashboard():

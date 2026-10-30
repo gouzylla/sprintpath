@@ -5,6 +5,7 @@ import Progress from './components/Progress'
 import Session from './components/Session'
 import { cacheExercises, loadAttempts, loadExercises, pickExercises, saveAttempt } from './storage'
 import type { Domain, Exercise, LocalAttempt } from './types'
+import Icon from './components/Icon'
 
 type View = 'home' | 'session' | 'progress'
 
@@ -52,19 +53,22 @@ export default function App() {
 
   const hasSession = useMemo(() => session.length > 0, [session])
 
-  return <div className="app-shell">
+  return <div className={`app-shell ${view === 'session' ? 'session-mode' : ''}`}>
+    <a className="skip-link" href="#main-content">Aller au contenu</a>
     <header className="topbar">
-      <button className="brand" onClick={() => setView('home')} aria-label="Accueil SprintPath"><span className="brand-mark">S</span><span>SprintPath</span></button>
-      <span className={`network-pill ${online ? 'online' : ''}`}>{online ? '● en ligne' : '● hors ligne'}</span>
+      <button className="brand" onClick={() => setView('home')} aria-label="Retour à l’accueil SprintPath"><span className="brand-mark" aria-hidden="true">S</span><span className="brand-name">SprintPath</span></button>
+      <span className={`network-pill ${online ? 'online' : ''}`}><span className="network-dot" aria-hidden="true" />{online ? 'En ligne' : 'Hors ligne'}</span>
     </header>
-    {view === 'home' && <Dashboard attempts={attempts} exercises={exercises} online={online} onStart={start} onGenerate={startGenerated} generating={generating} />}
-    {generationError && <div className="generation-toast" role="alert">{generationError}<button onClick={() => setGenerationError('')}>×</button></div>}
-    {view === 'session' && hasSession && <Session exercises={session} onExit={() => setView('progress')} onFinish={record} />}
-    {view === 'progress' && <Progress attempts={attempts} onHome={() => setView('home')} />}
-    <nav className="bottom-nav" aria-label="Navigation principale">
-      <button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}><span>⌂</span>Accueil</button>
-      <button className={view === 'session' ? 'active' : ''} onClick={() => start()} disabled={!hasSession}><span>◎</span>Session</button>
-      <button className={view === 'progress' ? 'active' : ''} onClick={() => setView('progress')}><span>↗</span>Progrès</button>
-    </nav>
+    <div id="main-content">
+      {view === 'home' && <Dashboard attempts={attempts} exercises={exercises} online={online} onStart={start} onGenerate={startGenerated} generating={generating} />}
+      {generationError && <div className="generation-toast" role="alert"><span>{generationError}</span><button onClick={() => setGenerationError('')} aria-label="Fermer le message">×</button></div>}
+      {view === 'session' && hasSession && <Session exercises={session} onExit={() => setView('progress')} onFinish={record} />}
+      {view === 'progress' && <Progress attempts={attempts} onHome={() => setView('home')} />}
+    </div>
+    {view !== 'session' && <nav className="bottom-nav" aria-label="Navigation principale">
+      <button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}><Icon name="home" /><span>Accueil</span></button>
+      <button onClick={() => start()} disabled={!hasSession}><Icon name="session" /><span>Session</span></button>
+      <button className={view === 'progress' ? 'active' : ''} onClick={() => setView('progress')}><Icon name="progress" /><span>Progrès</span></button>
+    </nav>}
   </div>
 }
