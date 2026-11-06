@@ -66,7 +66,7 @@ def dashboard(db: Session = Depends(get_db)):
         stats["attempts"] = int(stats["attempts"]) + 1
         stats["total_score"] = float(stats["total_score"]) + attempt.score
     domains = []
-    for domain in ("sql", "python", "english"):
+    for domain in ("sql", "python", "english", "data_engineering"):
         stats = by_domain.get(domain, {"attempts": 0, "total_score": 0})
         count = int(stats["attempts"])
         domains.append({"domain": domain, "attempts": count, "average_score": round(float(stats["total_score"]) / count, 1) if count else 0})
@@ -108,7 +108,7 @@ async def ai_coach(payload: CoachIn):
 async def generate_ai_exercise(payload: GeneratedExerciseIn, db: Session = Depends(get_db)):
     if not nim.enabled:
         raise HTTPException(status_code=503, detail="NVIDIA NIM n’est pas configuré")
-    domain_label = {"sql": "SQL", "python": "Python", "english": "professional English"}[payload.domain]
+    domain_label = {"sql": "SQL", "python": "Python", "english": "professional English", "data_engineering": "Data Engineering"}[payload.domain]
     system = (
         "You create concise technical learning exercises. Reply only with a JSON object containing exactly "
         "prompt, context, expected_answer, explanation, duration_seconds. For SQL, context must describe the available tables and columns. "

@@ -1,4 +1,4 @@
-export type Domain = 'sql' | 'python' | 'english'
+export type Domain = 'sql' | 'python' | 'english' | 'data_engineering'
 
 export interface Exercise {
   id: number
@@ -61,5 +61,6 @@ export interface Dashboard {
 export const DOMAIN_META: Record<Domain, { label: string; short: string; code: string; hint: string }> = {
   sql: { label: 'SQL', short: 'Requêtes', code: '01', hint: 'Interroger et modéliser les données' },
   python: { label: 'Python', short: 'Code', code: '02', hint: 'Écrire, tester et automatiser' },
-  english: { label: 'Anglais pro', short: 'Communication', code: '03', hint: 'Exprimer et argumenter au travail' }
+  english: { label: 'Anglais pro', short: 'Communication', code: '03', hint: 'Exprimer et argumenter au travail' },
+  data_engineering: { label: 'Data Engineering', short: 'Data', code: '04', hint: 'Pipelines, entrepôts et modélisation' }
 }

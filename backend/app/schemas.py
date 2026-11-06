@@ -37,7 +37,7 @@ class AttemptOut(BaseModel):
 
 
 class CoachIn(BaseModel):
-    domain: Literal["sql", "python", "english"]
+    domain: Literal["sql", "python", "english", "data_engineering"]
     question: str = Field(min_length=3, max_length=5_000)
     context: str = Field(default="", max_length=5_000)
     answer: str = Field(default="", max_length=10_000)
@@ -54,7 +54,7 @@ class CoachOut(BaseModel):
 
 
 class GeneratedExerciseIn(BaseModel):
-    domain: Literal["sql", "python", "english"]
+    domain: Literal["sql", "python", "english", "data_engineering"]
     topic: str = Field(min_length=2, max_length=160)
     difficulty: int = Field(default=1, ge=1, le=5)
 

@@ -16,7 +16,8 @@ const domains = Object.keys(DOMAIN_META) as Domain[]
 const focusCopy: Record<Domain, { title: string; topic: string }> = {
   sql: { title: 'Jointures & agrégation', topic: 'jointures et agrégation' },
   python: { title: 'Structures & fonctions', topic: 'fonctions et structures' },
-  english: { title: 'Expression professionnelle', topic: 'présentation de projet' }
+  english: { title: 'Expression professionnelle', topic: 'présentation de projet' },
+  data_engineering: { title: 'Pipelines & entrepôts', topic: 'modélisation et ETL' }
 }
 
 export default function Dashboard({ attempts, exercises, online, onStart, onGenerate, generating }: Props) {
@@ -52,7 +53,7 @@ export default function Dashboard({ attempts, exercises, online, onStart, onGene
       <div className="section-heading"><div><p className="eyebrow">VOTRE ÉLAN</p><h2 id="momentum-title">Cette semaine</h2></div><span className="attempt-count">{attempts.length} réponse{attempts.length > 1 ? 's' : ''}</span></div>
       <div className="summary-strip">
         <div><strong>{overallScore || '—'}</strong><span>{overallScore ? '% de moyenne' : 'Pas encore de score'}</span></div>
-        <div><strong>{answeredDomains}/3</strong><span>parcours actifs</span></div>
+        <div><strong>{answeredDomains}/{domains.length}</strong><span>parcours actifs</span></div>
       </div>
       <div className="progress-list">
         {domains.map(domain => {
