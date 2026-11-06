@@ -32,37 +32,41 @@ create index if not exists attempts_created_at_idx on public.attempts(created_at
 create index if not exists exercises_domain_difficulty_idx on public.exercises(domain, difficulty);
 
 insert into public.skills (domain, name) values
-  ('sql', 'Filtrer et trier'),
-  ('sql', 'Agréger des données'),
-  ('sql', 'Relier des tables'),
-  ('sql', 'Regrouper avec GROUP BY'),
-  ('sql', 'Sous-requêtes et CTE'),
+  ('sql', 'Requêtes de filtrage'),
+  ('sql', 'Jointures'),
+  ('sql', 'Agrégation et HAVING'),
+  ('sql', 'Fenêtre et classement'),
+  ('sql', 'CTE et sous-requêtes'),
   ('python', 'Structures de données'),
-  ('python', 'Fonctions'),
-  ('python', 'Listes en compréhension'),
+  ('python', 'Manipulation de chaînes'),
+  ('python', 'Dictionnaires et comptage'),
   ('python', 'Gestion des erreurs'),
-  ('python', 'Tests avec pytest'),
-  ('english', 'Se présenter'),
-  ('english', 'Présenter un projet'),
-  ('english', 'Expliquer une décision')
+  ('python', 'Tests unitaires pytest'),
+  ('english', 'Se présenter en entretien'),
+  ('english', 'Présenter un projet technique'),
+  ('english', 'Expliquer un choix technique'),
+  ('english', 'Expliquer son code à l'intervieweur'),
+  ('english', 'Question comportementale STAR')
 on conflict (name) do nothing;
 
 insert into public.exercises (skill_id, domain, prompt, context, expected_answer, explanation, difficulty)
 select s.id, v.domain, v.prompt, case when v.domain = 'sql' then 'commandes (id, client_id, montant, date_commande, pays)' || chr(10) || 'clients (id, nom)' else null end, v.expected_answer, v.explanation, v.difficulty
 from (values
-  ('sql', 'Filtrer et trier', 'Affichez les commandes de plus de 100 € triées de la plus récente à la plus ancienne.', 'SELECT * FROM commandes WHERE montant > 100 ORDER BY date_commande DESC;', 'Le filtre numérique doit précéder le tri. ORDER BY DESC inverse l''ordre chronologique.', 1),
-  ('sql', 'Agréger des données', 'Quel total de commandes calcule cette requête ? SELECT COUNT(*) FROM commandes;', 'Le nombre total de lignes dans la table commandes.', 'COUNT(*) compte les lignes, y compris celles dont d''autres colonnes sont NULL.', 1),
-  ('sql', 'Relier des tables', 'Comment conserver tous les clients, y compris ceux sans commande ?', 'SELECT clients.*, commandes.id FROM clients LEFT JOIN commandes ON commandes.client_id = clients.id;', 'LEFT JOIN conserve la table de gauche. INNER JOIN exclurait les clients sans commande.', 1),
-  ('sql', 'Regrouper avec GROUP BY', 'Écrivez une requête affichant le nombre de commandes par pays.', 'SELECT pays, COUNT(*) AS total FROM commandes GROUP BY pays;', 'COUNT est appliqué à chaque groupe défini par pays.', 2),
-  ('sql', 'Sous-requêtes et CTE', 'Utilisez un CTE pour compter les commandes par client, puis ne garder que ceux dépassant 3.', 'WITH c AS (SELECT client_id, COUNT(*) n FROM commandes GROUP BY client_id) SELECT * FROM c WHERE n > 3;', 'WITH crée une relation nommée réutilisable dans la requête principale.', 2),
-  ('python', 'Structures de données', 'Quel résultat produit {1, 2, 2, 3} ?', '{1, 2, 3}', 'Un ensemble supprime les doublons et n''autorise pas les doublons.', 1),
-  ('python', 'Fonctions', 'Que retourne cette fonction ? def double(x): return x * 2', 'Le double de x', 'return termine la fonction et renvoie la valeur calculée.', 1),
-  ('python', 'Listes en compréhension', 'Transformez la liste [''a'', ''b''] en [''A'', ''B''].', '[s.upper() for s in [''a'', ''b'']]', 'Une compréhension construit une nouvelle liste en appliquant une expression à chaque élément.', 1),
-  ('python', 'Gestion des erreurs', 'Quel bloc utilise-t-on pour intercepter une erreur d''ouverture de fichier ?', 'try:\n    open(''data.txt'')\nexcept FileNotFoundError:\n    pass', 'except FileNotFoundError cible précisément l''erreur attendue.', 2),
-  ('python', 'Tests avec pytest', 'Quel nom donne pytest à une fonction de test ?', 'Une fonction dont le nom commence par test_', 'pytest découvre automatiquement les fonctions préfixées par test_.', 1),
-  ('english', 'Se présenter', 'Complétez : ''I currently work as a ... and my main responsibility is ...''.', 'a data developer ... building SQL pipelines', 'Pour se présenter, on utilise l''article a ou an puis on relie les informations par and.', 1),
-  ('english', 'Présenter un projet', 'Comment dire ''J''ai optimisé la requête'' en anglais professionnel ?', 'I optimized the query.', 'Au passé simple, un verbe terminé par -ed devient -ied pour un -y consonantique.', 2),
-  ('english', 'Expliquer une décision', 'Choisissez la formulation la plus professionnelle.', 'We chose this approach because it is easier to maintain.', 'La justification claire est essentielle.', 2)
+  ('sql', 'Requêtes de filtrage', 'Écrivez une requête qui retourne les commandes dépassant 500 € passées au cours des 30 derniers jours, triées du montant le plus élevé au plus bas.', 'SELECT * FROM commandes WHERE montant > 500 AND date_commande >= CURRENT_DATE - INTERVAL ''30 days'' ORDER BY montant DESC;', 'Combinez deux conditions dans WHERE (montant et date), puis triez avec ORDER BY DESC pour avoir les montants les plus élevés en premier.', 1),
+  ('sql', 'Jointures', 'Écrivez une requête qui retourne le nom du client, sa ville et le montant total de ses commandes. Incluez les clients n''ayant jamais passé commande.', 'SELECT c.nom, c.ville, COALESCE(SUM(cmd.montant), 0) AS total FROM clients c LEFT JOIN commandes cmd ON cmd.client_id = c.id GROUP BY c.id, c.nom, c.ville;', 'LEFT JOIN conserve tous les clients même sans commande. COALESCE transforme le NULL en 0. GROUP BY doit inclure toutes les colonnes non agrégées.', 2),
+  ('sql', 'Agrégation et HAVING', 'Écrivez une requête affichant les pays ayant plus de 10 commandes, avec leur nombre total de commandes et leur montant moyen.', 'SELECT pays, COUNT(*) AS nb_commandes, ROUND(AVG(montant), 2) AS montant_moyen FROM commandes GROUP BY pays HAVING COUNT(*) > 10 ORDER BY nb_commandes DESC;', 'HAVING filtre les groupes après GROUP BY, contrairement à WHERE qui filtre les lignes avant l''agrégation.', 2),
+  ('sql', 'Fenêtre et classement', 'Pour chaque client, identifiez sa commande la plus récente et affichez son id, son montant et sa date.', 'WITH ranked AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY date_commande DESC) AS rn FROM commandes) SELECT id, client_id, montant, date_commande FROM ranked WHERE rn = 1;', 'ROW_NUMBER() avec PARTITION BY réinitialise le compteur par client. ORDER BY date_commande DESC place la commande la plus récente en premier. rn = 1 garde uniquement la dernière commande par client.', 3),
+  ('sql', 'CTE et sous-requêtes', 'Utilisez un CTE pour calculer le total dépensé par chaque client, puis retournez uniquement les clients ayant dépensé plus de 1000 € au total.', 'WITH client_totals AS (SELECT client_id, SUM(montant) AS total FROM commandes GROUP BY client_id) SELECT client_id, total FROM client_totals WHERE total > 1000 ORDER BY total DESC;', 'Un CTE nomme un résultat intermédiaire, rendant la requête lisible et réutilisable. C''est une preuve de réflexion modulaire en entretien.', 2),
+  ('python', 'Structures de données', 'Écrivez une fonction qui reçoit une liste d''identifiants et retourne uniquement les identifiants uniques, tout en préservant leur ordre d''apparition.', 'def unique_ordered(ids):\n    seen = set()\n    return [x for x in ids if not (x in seen or seen.add(x))]', 'Un ensemble (set) permet des recherches en O(1). La compréhension de liste filtre les doublons tout en préservant l''ordre d''apparition.', 2),
+  ('python', 'Manipulation de chaînes', 'Écrivez une fonction qui vérifie si une chaîne est un palindrome, en ignorant la casse et les espaces.', 'def is_palindrome(s):\n    cleaned = ''''.join(c.lower() for c in s if c.isalnum())\n    return cleaned == cleaned[::-1]', 'Normalisez la chaîne (minuscules, alphanumériques uniquement), puis comparez-la à son inverse avec le tranchage [::-1].', 1),
+  ('python', 'Dictionnaires et comptage', 'Écrivez une fonction qui reçoit une liste de mots et retourne le mot le plus fréquent, ou None si la liste est vide.', 'from collections import Counter\n\ndef most_frequent(words):\n    return Counter(words).most_common(1)[0][0] if words else None', 'Counter compte les occurrences en O(n). most_common(1) retourne l''élément le plus fréquent. Le garde-fou if words évite l''erreur sur liste vide.', 2),
+  ('python', 'Gestion des erreurs', 'Écrivez une fonction qui divise deux nombres et retourne None si le diviseur est zéro ou si les entrées ne sont pas numériques.', 'def safe_divide(a, b):\n    try:\n        return a / b\nexcept (ZeroDivisionError, TypeError):\n    return None', 'Attrapez les exceptions spécifiques plutôt qu''un except bare. Retournez une valeur sentinelle (None) pour les entrées invalides au lieu de faire planter le programme.', 2),
+  ('python', 'Tests unitaires pytest', 'Écrivez un test pytest qui vérifie qu''une fonction add(a, b) retourne la somme de ses deux arguments pour des entiers positifs et négatifs.', 'def test_add_positive_and_negative():\n    assert add(2, 3) == 5\n    assert add(-1, 1) == 0\n    assert add(0, 0) == 0', 'Testez plusieurs cas, y compris les cas limites (zéro, négatifs). Nommez les fonctions avec le préfixe test_ pour que pytest les découvre automatiquement.', 1),
+  ('english', 'Se présenter en entretien', "Complete this interview introduction: 'I currently work as a ______ at ______. My main responsibility is ______.'", "a software engineer ... a fintech startup ... building scalable payment processing systems", "Use present simple for your current role and responsibilities. Be specific about your domain and the impact of your work.", 1),
+  ('english', 'Présenter un projet technique', "Choose the most professional way to say: 'J'ai créé une API qui gère les paiements.'", "I designed and implemented a payment processing API that handles transactions securely.", "Use strong action verbs (designed, implemented, handles). Mention the purpose and a quality attribute (securely, scalably, reliably).", 2),
+  ('english', 'Expliquer un choix technique', "Choose the most professional formulation for: 'On a utilisé PostgreSQL parce que c'était mieux pour les jointures.'", "We chose PostgreSQL because it supports complex joins and ensures data integrity for relational workloads.", "Use 'We chose... because...' to explain a decision. Give a technical rationale (joins, data integrity) rather than a vague 'it was better'.", 2),
+  ('english', 'Expliquer son code à l'intervieweur', "Complete: 'This function uses a ______ to track seen elements, which gives us ______ lookup time.'", "a hash set ... constant-time", "Use precise complexity terminology (constant-time, O(1), linear-time) when discussing algorithms in English during an interview.", 2),
+  ('english', 'Question comportementale STAR', "Complete the Situation part of a STAR answer: 'In my last role, we faced ______ when ______.'", "a critical performance issue ... our database queries were slowing down the checkout page", "STAR = Situation, Task, Action, Result. Be specific about the context and the problem before explaining what you did.", 2)
 ) as v(domain, skill_name, prompt, expected_answer, explanation, difficulty)
 join public.skills s on s.domain = v.domain and s.name = v.skill_name
 where not exists (
